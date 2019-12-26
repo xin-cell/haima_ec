@@ -7,7 +7,7 @@ from .models import UserFav, UserLeavingMessage, UserAddress
 
 
 class UserFavAdmin(object):
-    list_display = ['user', 'media', "add_time"]
+    list_display = ['user', 'goods', "add_time"]
 
 
 class UserLeavingMessageAdmin(object):

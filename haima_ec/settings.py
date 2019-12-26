@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
 import os ,sys
+import datetime
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -28,7 +29,7 @@ SECRET_KEY = 'mna6!huz!r)4hgnaih%*9b5ha$y#rgj-40q0i&2_fm%qk#5orp'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -50,6 +51,8 @@ INSTALLED_APPS = [
     'DjangoUeditor',
     'rest_framework',
     'django_filters',
+    'rest_framework.authtoken',
+    'social_django',
 
 ]
 
@@ -63,6 +66,44 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.schemas.coreapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication'
+    ),
+    # 限速设置
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',  # 未登陆用户
+        'rest_framework.throttling.UserRateThrottle'  # 登陆用户
+    ),
+    # 'DEFAULT_THROTTLE_RATES': {
+    #     'anon': '3/minute',  # 每分钟可以请求两次
+    #     'user': '5/minute'  # 每分钟可以请求五次
+    # }
+}
+
+
+# 设置邮箱和用户名和手context_processors机号均可登录
+AUTHENTICATION_BACKENDS = (
+    'users.views.CustomBackend',
+
+    'social_core.backends.weibo.WeiboOAuth2',  #微博
+    # 'social_core.backends.qq.QQOAuth2',        #qq
+    # 'social_core.backends.weixin.WeixinOAuth2',#微信
+    'django.contrib.auth.backends.ModelBackend'      #指定django的modelbackend 类
+)
+
+#有效期限
+JWT_AUTH = {
+    'JWT_EXPIRATION_DELTA': datetime.timedelta(days=7),    #也可以设置seconds=20
+    'JWT_AUTH_HEADER_PREFIX': 'JWT',                       #JWT跟前端保持一致，比如“token”这里设置成JWT
+}
 
 CORS_ORIGIN_ALLOW_ALL = True
 
@@ -80,6 +121,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                #第三方登录
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -99,6 +143,10 @@ DATABASES = {
         'PASSWORD': '550053632',
         'HOST':'localhost',
         'PORT':'3306',
+        # 这里引擎用innodb（默认myisam）
+        # 因为后面第三方登录时，要求引擎为INNODB
+        # 'OPTIONS':{'init_command': 'SET storage_engine=INNODB'},    #按照课程会报错，改为
+        "OPTIONS": {"init_command": "SET default_storage_engine=INNODB;"},
     }
 }
 
@@ -151,3 +199,47 @@ STATICFILES_DIRS = [
 ]
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+
+# 手机号码正则表达式
+REGEX_MOBILE = "^1[358]\d{9}$|^147\d{8}$|^176\d{8}$"
+
+
+#云片网APIKEY
+APIKEY = "35d5a828a75ffe05c11a4835350c7c9f"
+
+#支付宝相关配置
+private_key_path = os.path.join(BASE_DIR, 'apps/trade/keys/private_2048.txt')
+ali_pub_key_path = os.path.join(BASE_DIR, 'apps/trade/keys/alipay_key_2048.txt')
+
+
+#缓存配置
+REST_FRAMEWORK_EXTENSIONS = {
+    'DEFAULT_CACHE_RESPONSE_TIMEOUT': 5   #5s过期，时间自己可以随便设定
+}
+
+
+# redis缓存
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+
+
+
+# 第三方登录，里面的值是你的开放平台对应的值
+SOCIAL_AUTH_WEIBO_KEY = '3037976359'
+SOCIAL_AUTH_WEIBO_SECRET = '0d82c9b7cb20cee9de67f3652139dbd9'
+#登录成功后跳转到首页
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/index/'
+# SOCIAL_AUTH_QQ_KEY = 'xxxxxxx'
+# SOCIAL_AUTH_QQ_SECRET = 'xxxxxxx'
+#
+# SOCIAL_AUTH_WEIXIN_KEY = 'xxxxxxx'
+# SOCIAL_AUTH_WEIXIN_SECRET = 'xxxxxxx'
